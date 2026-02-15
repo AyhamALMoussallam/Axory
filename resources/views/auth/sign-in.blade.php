@@ -50,7 +50,7 @@ function login() {
     axios.post(`${apiBase}/login`, { email, password })
         .then(res => {
             localStorage.setItem('auth_token', res.data.token);
-            window.location.href = '/dashboard';
+            window.location.href = '/index';
         })
         .catch(err => {
             document.getElementById('message').style.color = 'red';
