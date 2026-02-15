@@ -2,41 +2,50 @@
 
 namespace App\Notifications;
 
-use Illuminate\Auth\Notifications\VerifyEmail as VerifyEmailBase;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Notifications\Notification;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\URL;
 
-class CustomVerifyEmail extends VerifyEmailBase
+class CustomVerifyEmail extends Notification
 {
     /**
-     * Generate the temporary signed verification URL.
+     * Get the notification's delivery channels.
      */
-    protected function verificationUrl($notifiable)
+    public function via($notifiable): array
     {
-        $url = URL::temporarySignedRoute(
-            'verification.verify',
-            Carbon::now()->addMinutes(60),
-            [
-                'id' => $notifiable->getKey(),
-                'hash' => sha1($notifiable->getEmailForVerification())
-            ]
-        );
-
-        // Here you can modify the URL to redirect to your frontend application
-        return "http://your-frontend-domain.com/email/verify?url={$url}";
+        return ['mail'];
     }
 
     /**
-     * Build the email message.
+     * Build the mail representation of the notification.
      */
     public function toMail($notifiable)
     {
+        $verificationUrl = $this->verificationUrl($notifiable);
+
         return (new MailMessage)
-                    ->subject('Verify Your Email Address')
-                    ->greeting('Hello ' . $notifiable->name)
-                    ->line('Click the button below to verify your email address.')
-                    ->action('Verify Email', $this->verificationUrl($notifiable))
-                    ->line('If you did not create an account, no further action is required.');
+            ->subject('Verify Your Email for Axory website')
+            ->greeting('Hello ' . $notifiable->name . ',')
+            ->line('Thank you for registering! Please verify your email by clicking the button below.')
+            ->action('Verify Email', $verificationUrl)
+            ->line('If you did not create an account, no further action is required.')
+            ->salutation('Regards, Axory Team');
+    }
+
+    /**
+     * Generate the signed verification URL.
+     */
+    protected function verificationUrl($notifiable)
+    {
+        return URL::temporarySignedRoute(
+            'verification.verify', // route name
+            Carbon::now()->addMinutes(60), // expires in 60 minutes
+            [
+                'id' => $notifiable->getKey(),
+                'hash' => sha1($notifiable->getEmailForVerification()),
+            ]
+        );
     }
 }
